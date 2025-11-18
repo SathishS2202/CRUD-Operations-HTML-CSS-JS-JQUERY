@@ -3,101 +3,181 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <title>Fruit Shop</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        .alertBox {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 18px;
+            background: red;
+            color: white;
+            border-radius: 6px;
+            display: none;
+            z-index: 1000;
+        }
+        .expandText {
+            cursor: pointer;
+            color: blue;
+            text-decoration: underline;
+        }
+    </style>
 </head>
+
 <body>
-    <div class="container">
+    <!-- Custom Alert -->
+    <div id="alertBox" class="alertBox"></div>
+
+    <div class="container mt-4">
         <div class="row">
-            <div class="col-md-6">
-                <h4 class="display-5 py-2 border-bottom">Fruit Shop</h4>
-                <form action="" id="formSubmit">
+            <div class="col-md-7">
+                <h4 class="display-6 py-2 border-bottom">Fruit Shop</h4>
+
+                <form id="formSubmit">
+                    <input type="hidden" id="editId"> <!-- for editing -->
+
                     <div class="mb-3">
-                        <label for="fruit"  class="form-label">Fruits</label>
+                        <label class="form-label">Fruit Name</label>
                         <input type="text" class="form-control" name="fruit" placeholder="Enter Fruit Name">
                     </div>
+
                     <div class="mb-3">
-                        <label for="qty"   class="form-label">Quantity</label>
-                        <input type="text" name= "qty" class="form-control" placeholder="Enter Quantity">
+                        <label class="form-label">Quantity</label>
+                        <input type="text" class="form-control" name="qty" placeholder="Enter Quantity">
                     </div>
-                    <div>
-                        <button class="btn btn-primary"  type="submit">Add Fruit</button>
-                        <button class="btn btn-secondary" type="reset">Remove Fruit</button>
-                    </div>
+
+                    <button class="btn btn-primary" type="submit">Save</button>
+                    <button class="btn btn-secondary" type="reset">Reset</button>
                 </form>
+
                 <hr>
-                <table class="table table-bordered ">
+
+                <table class="table table-bordered">
                     <thead>
                         <tr>
                             <th>Sno</th>
                             <th>Fruit</th>
                             <th>Quantity</th>
-                            <th>Delete</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
-                    <tbody>
 
-                    </tbody>
+                    <tbody></tbody>
                 </table>
             </div>
         </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
-     <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
-    <script>
-    $("#formSubmit").submit(function(e) {
-        e.preventDefault();
-        
-        const fruit = e.target.fruit.value;
-        const qty = e.target.qty.value;
 
-        if (!qty || !fruit) {
-            alert("Enter all details");
-            return;
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+    <script>
+        function showAlert(msg) {
+            $("#alertBox").text(msg).fadeIn();
+
+            setTimeout(() => {
+                $("#alertBox").fadeOut();
+            }, 3000);
         }
 
-        const obj = { id: Date.now(), fruit, qty };
+        $("#formSubmit").submit(function (e) {
+            e.preventDefault();
 
-        const fruits = JSON.parse(localStorage.getItem("fruits")) || [];
-        fruits.push(obj);
-        localStorage.setItem("fruits", JSON.stringify(fruits));
+            const fruit = e.target.fruit.value.trim();
+            const qty = e.target.qty.value.trim();
+            const editId = $("#editId").val();
 
-        loadfruits();
-        e.target.reset();
-    });
+            // Validation
+            if (!fruit) return showAlert("Fruit name is required!");
+            if (!/^[A-Za-z ]+$/.test(fruit)) return showAlert("Fruit name must contain only letters!");
+            if (fruit.length > 12) return showAlert("Fruit name must be under 12 letters!");
 
-    function loadfruits() {
-        const fruits = JSON.parse(localStorage.getItem("fruits")) || [];
-        $("tbody").html(""); // Clear old rows
+            if (!qty) return showAlert("Quantity is required!");
+            if (!/^[0-9]+$/.test(qty)) return showAlert("Quantity must be a number!");
+            if (parseInt(qty) <= 0) return showAlert("Quantity must be greater than zero!");
 
-        fruits.forEach((item, index) => {
-            const tr = `
-                <tr>
-                    <td>${index + 1}</td>
-                    <td>${item.fruit}</td>
-                    <td>${item.qty}</td>
-                    <td>
-                        <button class="btn btn-danger btn-sm deleteBtn" data-id="${item.id}">Delete</button>
-                    </td>
-                </tr>
-            `;
-            $("tbody").append(tr);
+            let fruits = JSON.parse(localStorage.getItem("fruits")) || [];
+            
+            if (editId) {
+                fruits = fruits.map(item =>
+                    item.id == editId ? { ...item, fruit, qty } : item
+                );
+                showAlert("Fruit updated successfully!");
+                $("#editId").val("");
+            } else {
+                fruits.push({ id: Date.now(), fruit, qty });
+                showAlert("Fruit added successfully!");
+            }
+
+            localStorage.setItem("fruits", JSON.stringify(fruits));
+            loadFruits();
+            e.target.reset();
         });
-    }
+        function loadFruits() {
+            let fruits = JSON.parse(localStorage.getItem("fruits")) || [];
+            $("tbody").html("");
 
-    $(document).on("click", ".deleteBtn", function () {
-        const id = $(this).data("id"); 
+            fruits.forEach((item, index) => {
+                const shortText =
+                    item.fruit.length > 8
+                        ? item.fruit.substring(0, 8) + "..."
+                        : item.fruit;
 
-        let fruits = JSON.parse(localStorage.getItem("fruits")) || [];
-        fruits = fruits.filter(item => item.id != id);
+                const tr = `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td class="expandText" data-full="${item.fruit}">${shortText}</td>
+                        <td>${item.qty}</td>
+                        <td>
+                            <button class="btn btn-warning btn-sm editBtn" data-id="${item.id}">Edit</button>
+                            <button class="btn btn-danger btn-sm deleteBtn" data-id="${item.id}">Delete</button>
+                        </td>
+                    </tr>
+                `;
+                $("tbody").append(tr);
+            });
+        }
 
-        localStorage.setItem("fruits", JSON.stringify(fruits));
 
-        loadfruits(); 
-    });
+        $(document).on("click", ".expandText", function () {
+            let full = $(this).data("full");
+            let current = $(this).text();
 
-    loadfruits(); // initial load
-</script>
+            if (current.endsWith("...")) {
+                $(this).text(full);
+            } else {
+                $(this).text(full.substring(0, 8) + "...");
+            }
+        });
+
+        $(document).on("click", ".deleteBtn", function () {
+            let id = $(this).data("id");
+            let fruits = JSON.parse(localStorage.getItem("fruits")) || [];
+            fruits = fruits.filter(item => item.id != id);
+
+            localStorage.setItem("fruits", JSON.stringify(fruits));
+            showAlert("Fruit deleted successfully!");
+            loadFruits();
+        });
+
+
+        $(document).on("click", ".editBtn", function () {
+            let id = $(this).data("id");
+            let fruits = JSON.parse(localStorage.getItem("fruits")) || [];
+            let obj = fruits.find(item => item.id == id);
+
+            $("[name=fruit]").val(obj.fruit);
+            $("[name=qty]").val(obj.qty);
+            $("#editId").val(id);
+
+            showAlert("Edit mode activated!");
+        });
+
+        loadFruits();
+    </script>
 
 </body>
 </html>
